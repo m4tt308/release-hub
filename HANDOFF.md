@@ -29,6 +29,9 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
   creare un file di handoff che tracci le sessioni di lavoro (una voce per
   giorno con le modifiche fatte) e una sezione "Requisiti" con le richieste
   ricevute.
+- **2026-11-03** — L'utente ha vari progetti (es. "Verbalia") da aggiungere
+  alla vetrina. Requisito esplicito: per ogni app deve essere scaricabile
+  **solo il pacchetto compilato**, mai il codice sorgente.
 
 ## Sessioni
 
@@ -53,7 +56,34 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
   - Repo pubblico creato: https://github.com/m4tt308/release-hub
   - GitHub Pages abilitato con sorgente "GitHub Actions".
   - Primo deploy completato con successo: https://m4tt308.github.io/release-hub/ (HTTP 200).
+- A seguito della richiesta "ho vari progetti, tipo verbalia. deve essere
+  scaricabile solo il pacchetto.":
+  - Verificato via `gh` che `m4tt308/Verbalia` esiste, è **privato** e non ha
+    ancora release pubblicate.
+  - Aggiunto `Verbalia` a [js/config.js](js/config.js) con i dati reali del repo
+    (descrizione e icona lasciate come TODO, da compilare).
+  - Rinforzato in [js/app.js](js/app.js) il principio "solo il pacchetto
+    scaricabile, mai il sorgente": il sito legge solo `release.assets`
+    (mai `zipball_url`/`tarball_url`), più un filtro di sicurezza aggiuntivo
+    (`isSourceArchiveAsset`) che esclude eventuali asset chiamati "Source code…".
+  - Aggiunta icona di fallback generata (iniziale del nome) per le app senza
+    `icon` configurato, per gestire il caso Verbalia (nessuna icona ancora).
+  - Migliorato il messaggio d'errore quando un repo è privato/non accessibile
+    (404 → invito esplicito a impostare un token nel pannello ⚙️).
+  - **Bug trovato e corretto durante il test**: con repo che hanno molte
+    release (testato con `cli/cli`, 210 release), la cache in `sessionStorage`
+    superava la quota del browser (`QuotaExceededError`) e faceva fallire
+    l'intero caricamento pur avendo i dati dalla API. Ora la scrittura in
+    cache è in un `try/catch` dedicato: un fallimento della cache (quota
+    piena, navigazione privata) non blocca più il rendering.
+  - Testato visivamente in Chrome headless: caso repo pubblico con molte
+    release (card completa, download button corretto, changelog, storico) e
+    caso repo privato senza token (messaggio d'errore corretto).
+  - Documentato nel README (sezione rate limit) che repo privati come
+    Verbalia richiedono un token fine-grained con permesso "Contents:
+    Read-only" nel pannello ⚙️ del sito.
 - **Da fare in una prossima sessione (richiede input dell'utente):**
-  - Sostituire i placeholder in [js/config.js](js/config.js) con i repository reali delle app da mostrare in vetrina (owner, repo, nome, descrizione, icona).
-  - Creare/scegliere i repository delle singole app e copiarvi il template del workflow di release.
-  - Pubblicare il primo tag SemVer (`v1.0.0`) su almeno un'app per vedere la vetrina popolata con dati reali.
+  - Compilare `description` e `icon` di Verbalia in [js/config.js](js/config.js).
+  - Elencare gli altri progetti ("vari progetti") da aggiungere alla vetrina (owner/repo, nome, descrizione, icona, eventuale `primaryAssetPattern`).
+  - Copiare il template del workflow di release nei repo delle singole app e pubblicare il primo tag SemVer (`v1.0.0`) per popolare la vetrina con dati reali.
+  - Decidere se e come dare al pannello ⚙️ (token GitHub) un token fine-grained scoped solo ai repo privati interessati (es. Verbalia), dato che la maggior parte dei repo dell'utente sono privati.

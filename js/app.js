@@ -43,13 +43,32 @@ function setupSettingsPanel() {
 
 /* ---------- Fetch con cache in sessionStorage e gestione rate limit ---------- */
 
-async function githubFetch(path) {
-  const cacheKey = `gh_cache:${path}`;
-  const cached = sessionStorage.getItem(cacheKey);
-  if (cached) {
+function readCache(cacheKey) {
+  try {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (!cached) return null;
     const { ts, data } = JSON.parse(cached);
     if (Date.now() - ts < CACHE_TTL_MS) return data;
+  } catch {
+    // Cache corrotta o non disponibile: ignora e ricarica dalla rete.
   }
+  return null;
+}
+
+function writeCache(cacheKey, data) {
+  try {
+    sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+  } catch {
+    // sessionStorage può rifiutare scritture troppo grandi (QuotaExceededError)
+    // o essere disabilitato (es. navigazione privata): la cache è solo
+    // un'ottimizzazione, un fallimento qui non deve bloccare il caricamento.
+  }
+}
+
+async function githubFetch(path) {
+  const cacheKey = `gh_cache:${path}`;
+  const cached = readCache(cacheKey);
+  if (cached) return cached;
 
   const headers = { Accept: "application/vnd.github+json" };
   const token = getToken();
@@ -63,11 +82,13 @@ async function githubFetch(path) {
     throw new RateLimitError(resetDate);
   }
   if (!res.ok) {
-    throw new Error(`GitHub API error ${res.status} su ${path}`);
+    const err = new Error(`GitHub API error ${res.status} su ${path}`);
+    err.status = res.status;
+    throw err;
   }
 
   const data = await res.json();
-  sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+  writeCache(cacheKey, data);
   return data;
 }
 
@@ -121,19 +142,37 @@ function pickLatestRelease(releases, includePrerelease) {
   return releases.find((r) => includePrerelease || !r.prerelease) || null;
 }
 
+/**
+ * Deve essere scaricabile SOLO il pacchetto compilato, mai il codice sorgente.
+ * Per questo il sito legge esclusivamente `release.assets` (i file che carichi
+ * manualmente/dalla CI su una Release) e non usa mai `zipball_url`/`tarball_url`
+ * (gli archivi del sorgente generati automaticamente da GitHub per ogni release).
+ * Questo filtro è una rete di sicurezza aggiuntiva nel caso un asset con quel
+ * nome venga caricato per errore.
+ */
+function isSourceArchiveAsset(name) {
+  return /^source[ _-]?code\b/i.test(name);
+}
+
+function getPackageAssets(release) {
+  if (!release || !release.assets) return [];
+  return release.assets.filter((a) => !isSourceArchiveAsset(a.name));
+}
+
 function pickPrimaryAsset(release, pattern) {
-  if (!release || !release.assets || release.assets.length === 0) return null;
+  const assets = getPackageAssets(release);
+  if (assets.length === 0) return null;
   if (pattern) {
     const re = new RegExp(pattern, "i");
-    const match = release.assets.find((a) => re.test(a.name));
+    const match = assets.find((a) => re.test(a.name));
     if (match) return match;
   }
-  return release.assets[0];
+  return assets[0];
 }
 
 function sumDownloads(releases) {
   return releases.reduce((total, r) => {
-    return total + (r.assets || []).reduce((s, a) => s + (a.download_count || 0), 0);
+    return total + getPackageAssets(r).reduce((s, a) => s + (a.download_count || 0), 0);
   }, 0);
 }
 
@@ -145,10 +184,11 @@ function formatDate(iso) {
 }
 
 function renderAssetList(release) {
-  if (!release.assets || release.assets.length === 0) {
-    return `<p class="hint">Nessun asset binario allegato a questa release.</p>`;
+  const assets = getPackageAssets(release);
+  if (assets.length === 0) {
+    return `<p class="hint">Nessun pacchetto allegato a questa release.</p>`;
   }
-  return `<div class="asset-list">${release.assets
+  return `<div class="asset-list">${assets
     .map(
       (a) => `
       <a href="${a.browser_download_url}" target="_blank" rel="noopener">
@@ -165,13 +205,32 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function fallbackIconDataUri(name) {
+  const initial = (name || "?").trim().charAt(0).toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+    <rect width="48" height="48" rx="10" fill="#272b36"/>
+    <text x="50%" y="52%" dy=".35em" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#9aa0ad">${initial}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function applyIcon(card, appConfig) {
+  const img = card.querySelector(".app-icon");
+  const fallback = fallbackIconDataUri(appConfig.displayName);
+  img.src = appConfig.icon || fallback;
+  img.alt = appConfig.displayName;
+  img.onerror = () => {
+    img.onerror = null;
+    img.src = fallback;
+  };
+}
+
 function renderAppCard(appConfig, releases) {
   const template = document.getElementById("app-card-template");
   const node = template.content.cloneNode(true);
   const card = node.querySelector(".app-card");
 
-  card.querySelector(".app-icon").src = appConfig.icon || "";
-  card.querySelector(".app-icon").alt = appConfig.displayName;
+  applyIcon(card, appConfig);
   card.querySelector(".app-name").textContent = appConfig.displayName;
   card.querySelector(".app-description").textContent = appConfig.description || "";
 
@@ -231,7 +290,7 @@ function renderErrorCard(appConfig, message) {
   const template = document.getElementById("app-card-template");
   const node = template.content.cloneNode(true);
   const card = node.querySelector(".app-card");
-  card.querySelector(".app-icon").src = appConfig.icon || "";
+  applyIcon(card, appConfig);
   card.querySelector(".app-name").textContent = appConfig.displayName;
   card.querySelector(".app-description").textContent = appConfig.description || "";
   card.querySelector(".latest-release").innerHTML = `<p class="card-error">${escapeHtml(message)}</p>`;
@@ -265,7 +324,11 @@ async function init() {
             : "Limite di richieste GitHub superato. Imposta un token nelle impostazioni (⚙️) per aumentare il limite.";
         }
         console.error(`Errore nel caricamento di ${appConfig.owner}/${appConfig.repo}:`, err);
-        return renderErrorCard(appConfig, "Impossibile caricare le release per questa app.");
+        const message =
+          err.status === 404
+            ? "Repository non trovato o privato: imposta un token con accesso a questo repo nelle impostazioni (⚙️)."
+            : "Impossibile caricare le release per questa app.";
+        return renderErrorCard(appConfig, message);
       }
     })
   );
