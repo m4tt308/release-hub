@@ -38,6 +38,12 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
 - **2026-11-03** — "Come si fa a pubblicare? Nel caso occupatene tu." →
   richiesta di gestire in autonomia la pubblicazione delle release per i
   repo-app.
+- **2026-11-03** — Confermato/ribadito: `release-hub` non deve mai contenere
+  codice sorgente delle app, solo i pacchetti compilati.
+- **2026-11-03** — Un collega a cui è stato girato il link di `release-hub`
+  non riusciva a scaricare il pacchetto di Mail-Editor (perché il repo
+  sorgente è privato e lui non ha un token). Richiesto di far funzionare il
+  download pubblico per chi non ha un token GitHub.
 
 ## Sessioni
 
@@ -137,7 +143,44 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
     forma generica come sopra. **Promemoria per le prossime sessioni**:
     questo file è pubblico, non riportarci segreti, dettagli di sicurezza o
     meccanismi interni dei singoli progetti.
+- A seguito di "perché se giro il link al mio collega non gli permette di
+  scaricare i pacchetti?":
+  - Causa: il repo sorgente di Mail-Editor è privato, quindi senza un token
+    (salvato solo nel browser di chi lo ha impostato) la vetrina non riesce a
+    leggerne le release — per chi non ha token, sembra che il repo non
+    esista.
+  - Chiesto all'utente come vuole distribuire i pacchetti delle app non
+    riservate: confermata l'opzione "pubblica solo il pacchetto, mai il
+    sorgente" in un posto pubblico separato dal repo sorgente.
+  - Implementato un meccanismo generico in [js/config.js](js/config.js)/[js/app.js](js/app.js):
+    un'app può avere `releasesOwner`/`releasesRepo` (repo pubblico diverso da
+    quello sorgente, da cui leggere le release) e `tagPrefix` (per
+    distinguere le release di più app che condividono lo stesso
+    `releasesRepo`). Il codice sorgente resta sempre nel repo privato
+    originale, invariato.
+  - Promosso manualmente (via `gh release create`, scaricando l'asset dalla
+    release privata già esistente e ricaricandolo) il pacchetto
+    `S2E Mail Editor.exe` v1.0.0 come release pubblica
+    `mail-editor-v1.0.0` nello stesso repo `release-hub` — nessun sorgente
+    coinvolto, solo il file compilato.
+  - Configurato `Mail-Editor` in [js/config.js](js/config.js) per leggere da
+    lì (`releasesOwner/releasesRepo: m4tt308/release-hub`,
+    `tagPrefix: "mail-editor-"`). Verificato via API che l'asset sia
+    scaricabile con HTTP 200 **senza alcuna autenticazione**, e testato
+    visivamente che la card di Mail-Editor ora si popola correttamente
+    mentre quella di Verbalia resta protetta come previsto.
+  - Nota: questa prima pubblicazione pubblica è stata fatta a mano da me
+    (ho accesso sia al repo privato che a `release-hub`). Per rendere
+    **automatico** anche il prossimo tag (senza bisogno del mio intervento
+    manuale ogni volta), il workflow `.github/workflows/release.yml` di
+    Mail-Editor andrebbe modificato per pubblicare direttamente su
+    `release-hub` invece che sul proprio repo: servirebbe un Personal Access
+    Token fine-grained con permesso "Contents: Read and write" limitato a
+    `release-hub`, creato dall'utente (non è possibile crearlo via API) e
+    salvato come secret nel repo Mail-Editor. Non ancora fatto: per ora ogni
+    nuova release di Mail-Editor va promossa a mano (chiedendo a me).
 - **Da fare in una prossima sessione (richiede input dell'utente):**
+  - Decidere se impostare il token per l'automazione completa di Mail-Editor descritta sopra, oppure continuare a promuovere ogni release a mano.
   - Quando l'utente builda un pacchetto di Verbalia sulla sua macchina
     fidata, darmelo (percorso del file + numero di versione) perché crei
     tag + GitHub Release e carichi l'asset manualmente (`gh release create`).

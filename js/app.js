@@ -125,7 +125,10 @@ function renderMarkdown(md) {
 /* ---------- Logica dati per singola app ---------- */
 
 async function loadReleasesForApp(appConfig) {
-  const { owner, repo } = appConfig;
+  // Se è impostato releasesOwner/releasesRepo, i pacchetti vengono letti da lì (tipicamente
+  // un repo pubblico) invece che dal repo sorgente (owner/repo), che può restare privato.
+  const owner = appConfig.releasesOwner || appConfig.owner;
+  const repo = appConfig.releasesRepo || appConfig.repo;
   let releases = [];
   let page = 1;
   // Fino a 300 release (3 pagine da 100): sufficiente per uso personale.
@@ -135,6 +138,15 @@ async function loadReleasesForApp(appConfig) {
     if (batch.length < 100) break;
     page += 1;
   }
+
+  // Quando più app condividono lo stesso releasesRepo, il tagPrefix isola le release di
+  // questa app e lo toglie dalla versione mostrata (es. "mail-editor-v1.0.0" -> "v1.0.0").
+  if (appConfig.tagPrefix) {
+    releases = releases
+      .filter((r) => r.tag_name.startsWith(appConfig.tagPrefix))
+      .map((r) => ({ ...r, tag_name: r.tag_name.slice(appConfig.tagPrefix.length) }));
+  }
+
   return releases;
 }
 

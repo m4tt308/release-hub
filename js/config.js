@@ -3,7 +3,7 @@
  * Ogni app corrisponde a UN repository GitHub separato che usa le GitHub Releases.
  *
  * owner                -> il tuo username o la tua organizzazione GitHub
- * repo                 -> nome del repository dell'app
+ * repo                 -> nome del repository SORGENTE dell'app (quello con il codice)
  * displayName          -> nome mostrato in vetrina
  * description          -> breve descrizione
  * icon                 -> URL di un'immagine (puoi usare raw.githubusercontent.com) o lascia vuoto
@@ -14,10 +14,22 @@
  *                         release (release.assets), mai il codice sorgente del repository.
  * includePrerelease    -> (opzionale, default false) se true considera anche le pre-release come "ultima versione"
  *
- * NB: se il repository è privato (come la maggior parte dei tuoi progetti), per vedere le sue
- * release nella vetrina serve impostare un token nel pannello ⚙️ del sito: un Personal Access
- * Token fine-grained con permesso "Contents: Read-only" limitato a quel repository. Senza token,
- * la card dell'app mostrerà un errore "repository non trovato o privato".
+ * releasesOwner/releasesRepo (opzionali) -> se il repo sorgente (owner/repo) è PRIVATO ma vuoi
+ *   comunque che chiunque possa scaricare il pacchetto senza token (es. per darlo a colleghi),
+ *   pubblica i pacchetti come Release in un repository PUBBLICO separato (es. questo stesso
+ *   release-hub) e indicalo qui: la vetrina leggerà le release da releasesOwner/releasesRepo
+ *   invece che da owner/repo. Il codice sorgente resta privato in owner/repo, non viene mai
+ *   toccato: solo il file compilato finisce nel repo pubblico.
+ * tagPrefix (opzionale, richiede releasesRepo) -> se più app condividono lo stesso releasesRepo
+ *   (es. tutte pubblicano in release-hub), usa un prefisso nei tag per distinguerle
+ *   (es. "mail-editor-v1.0.0") e indicalo qui ("mail-editor-"): la vetrina mostra solo le
+ *   release con quel prefisso e lo toglie dalla versione mostrata.
+ *
+ * NB: senza releasesOwner/releasesRepo, un repo sorgente privato (come la maggior parte dei
+ * tuoi progetti) richiede che chi visita la vetrina imposti un token nel pannello ⚙️ (un
+ * Personal Access Token fine-grained con permesso "Contents: Read-only" su quel repository).
+ * Senza token, la card dell'app mostra un errore "repository non trovato o privato" — utile
+ * quando VUOI che il pacchetto resti riservato (es. Verbalia, a licenza proprietaria).
  */
 const APPS_CONFIG = [
   {
@@ -38,8 +50,13 @@ const APPS_CONFIG = [
     description: "Editor di mail aziendali.",
     // TODO: aggiungi un URL icona (es. raw.githubusercontent.com/m4tt308/Mail-Editor/main/assets/icon.png).
     icon: "",
-    primaryAssetPattern: null,
-    includePrerelease: false
+    primaryAssetPattern: "\\.exe$",
+    includePrerelease: false,
+    // Mail Editor va dato liberamente ai colleghi: pacchetto pubblicato qui (solo il file
+    // compilato), il sorgente resta privato nel repo Mail-Editor.
+    releasesOwner: "m4tt308",
+    releasesRepo: "release-hub",
+    tagPrefix: "mail-editor-"
   }
 
   // Aggiungi qui le tue altre app, una per oggetto, sul modello sopra. Esempio:
