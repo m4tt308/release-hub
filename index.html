@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Release Hub — Le mie applicazioni</title>
+<meta name="description" content="Vetrina e storico release delle applicazioni personali, basata sulle GitHub Releases." />
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <h1>📦 Release Hub</h1>
+      <p class="subtitle">Download e storico versioni delle mie applicazioni</p>
+    </div>
+    <button id="settings-toggle" class="icon-btn" title="Impostazioni token GitHub">⚙️</button>
+  </header>
+
+  <section id="settings-panel" class="settings-panel hidden">
+    <div class="container">
+      <label for="gh-token-input">
+        Token GitHub (opzionale, solo per uso personale nel tuo browser)
+      </label>
+      <div class="settings-row">
+        <input type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+        <button id="gh-token-save" class="btn btn-secondary">Salva</button>
+        <button id="gh-token-clear" class="btn btn-ghost">Rimuovi</button>
+      </div>
+      <p class="hint">
+        Senza token le chiamate alle API GitHub sono limitate a 60/ora per IP. Con un token
+        (fine-grained, permesso di sola lettura su repository pubblici) il limite sale a 5000/ora.
+        Il token resta solo in questo browser (localStorage) e non viene mai inviato altrove:
+        non condividere link a questa pagina se hai salvato un token con permessi più ampi del necessario.
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div id="global-status" class="global-status hidden"></div>
+    <div id="apps-grid" class="apps-grid"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Dati forniti in tempo reale dalle GitHub REST API. Nessun server di backend: 100% statico.</p>
+    </div>
+  </footer>
+
+  <template id="app-card-template">
+    <article class="app-card">
+      <div class="app-card-header">
+        <img class="app-icon" src="" alt="" />
+        <div>
+          <h2 class="app-name"></h2>
+          <p class="app-description"></p>
+        </div>
+      </div>
+
+      <div class="app-card-body">
+        <div class="latest-release">
+          <div class="latest-meta">
+            <span class="version-badge"></span>
+            <span class="release-date"></span>
+            <span class="download-count"></span>
+          </div>
+          <a class="btn btn-primary download-btn" href="#" target="_blank" rel="noopener">⬇ Download</a>
+        </div>
+
+        <details class="changelog-details">
+          <summary>Changelog ultima versione</summary>
+          <div class="changelog-body"></div>
+        </details>
+
+        <details class="history-details">
+          <summary>Storico release (<span class="history-count">0</span>)</summary>
+          <div class="history-list"></div>
+        </details>
+      </div>
+    </article>
+  </template>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+name: Release
+
+# Copia questo file in .github/workflows/release.yml nel repository DI OGNI APP
+# (non nel repository della vetrina). Si attiva quando crei e pushi un tag SemVer,
+# es: git tag v1.2.0 && git push origin v1.2.0
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codice
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # necessario per generare il changelog dai commit
+
+      - name: Estrai info versione dal tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if [[ "$TAG" =~ -(alpha|beta|rc) ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ------------------------------------------------------------------
+      # STEP DI BUILD — scegli/adatta il blocco corrispondente al tuo stack
+      # e rimuovi gli altri. Il risultato deve finire nella cartella `dist/`.
+      # ------------------------------------------------------------------
+
+      # --- Esempio Node.js / Electron ---
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: "20"
+      # - name: Installa dipendenze
+      #   run: npm ci
+      # - name: Build (produce .exe/.zip/.dmg in dist/)
+      #   run: npm run build
+
+      # --- Esempio Python (PyInstaller) ---
+      # - name: Setup Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: "3.12"
+      # - name: Installa dipendenze
+      #   run: pip install -r requirements.txt pyinstaller
+      # - name: Build eseguibile
+      #   run: pyinstaller --onefile --name app main.py --distpath dist
+
+      # --- Esempio generico (Makefile / script di build già presente) ---
+      # - name: Build
+      #   run: make build
+
+      - name: Prepara cartella dist (placeholder, rimuovi se già creata dalla build)
+        run: mkdir -p dist
+
+      - name: Crea GitHub Release con changelog automatico
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          generate_release_notes: true # changelog auto-generato dai commit/PR da ultimo tag
+          files: |
+            dist/*
