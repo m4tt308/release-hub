@@ -111,6 +111,20 @@ body {
   color: var(--text-muted);
 }
 
+.byline {
+  margin: 10px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.byline a {
+  color: var(--accent-hover);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-soft);
+  transition: color 0.2s var(--ease-soft), border-color 0.2s var(--ease-soft);
+}
+.byline a:hover { color: var(--accent-3); border-color: var(--accent-3); }
+
 .icon-btn {
   position: absolute;
   top: 30px;
@@ -400,6 +414,13 @@ summary:hover { color: var(--text); }
   font-size: 0.8rem;
   font-family: var(--font-mono);
 }
+.site-footer a {
+  color: var(--accent-hover);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-soft);
+  transition: color 0.2s var(--ease-soft), border-color 0.2s var(--ease-soft);
+}
+.site-footer a:hover { color: var(--accent-3); border-color: var(--accent-3); }
 
 /* ---------- Keyframes ---------- */
 @keyframes blink {

@@ -249,11 +249,37 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Coppie di colori in tema con lo sfondo ambientale (accent/accent-2/accent-3 di style.css):
+// ogni app riceve sempre la stessa coppia (derivata dal nome), per un'icona
+// riconoscibile e stabile tra un caricamento e l'altro, senza bisogno di un'icona vera.
+const ICON_GRADIENTS = [
+  ["#4f8cff", "#8b7bff"],
+  ["#8b7bff", "#2dd4bf"],
+  ["#2dd4bf", "#4f8cff"],
+  ["#4f8cff", "#2dd4bf"]
+];
+
+function hashString(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
 function fallbackIconDataUri(name) {
-  const initial = (name || "?").trim().charAt(0).toUpperCase();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">
-    <rect width="48" height="48" rx="10" fill="#272b36"/>
-    <text x="50%" y="52%" dy=".35em" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#9aa0ad">${initial}</text>
+  const label = (name || "?").trim();
+  const initial = (label.charAt(0) || "?").toUpperCase();
+  const hash = hashString(label);
+  const [c1, c2] = ICON_GRADIENTS[hash % ICON_GRADIENTS.length];
+  const gradId = `g${hash}`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+    <defs>
+      <linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <rect width="96" height="96" rx="22" fill="url(#${gradId})"/>
+    <text x="50%" y="55%" dy=".35em" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-weight="700" font-size="40" fill="#ffffff">${initial}</text>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
