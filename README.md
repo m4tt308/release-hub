@@ -80,6 +80,13 @@ File già creati in questo repository:
 - [js/app.js](js/app.js) — logica: fetch GitHub API, cache, rendering,
   gestione rate limit, sanitizzazione del changelog in markdown
 
+**Hosting: Vercel, non più GitHub Pages.** Dato che il tracciamento dei
+download (sezione E) richiede funzioni serverless, che GitHub Pages non
+supporta, il sito è ospitato solo su Vercel. Il vecchio link
+`https://m4tt308.github.io/release-hub/` è stato disattivato per evitare che
+qualcuno lo usi per sbaglio (i download lì non avrebbero più funzionato,
+puntando a `/api/download` che su Pages non esiste).
+
 Caratteristiche implementate:
 - Card per ogni app con icona, nome, descrizione.
 - Ultima versione (badge) + pulsante di download diretto sull'asset giusto
@@ -130,15 +137,10 @@ tuoi repository reali: `owner`, `repo`, `displayName`, `description`, `icon`
 (puoi puntare a un'immagine dentro il repo dell'app via
 `raw.githubusercontent.com`), ed eventualmente `primaryAssetPattern`.
 
-### 3. Attiva GitHub Pages
-Nel repo `release-hub` su GitHub:
-**Settings → Pages → Build and deployment → Source: "GitHub Actions"**
-
-Il workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) già incluso
-pubblica automaticamente il sito ad ogni push su `main`. In alternativa, se
-preferisci zero Actions per il sito statico, puoi impostare Source su
-"Deploy from a branch" (`main`, root `/`) — in tal caso puoi anche eliminare
-`deploy-pages.yml`.
+### 3. Hosting
+Il sito è ospitato su Vercel (vedi sezione E più sotto), non su GitHub Pages:
+serve una piattaforma con funzioni serverless per il tracciamento dei
+download. Collega il repo a Vercel prima di procedere con i passi successivi.
 
 ### 4. Prepara ciascun repository delle app
 Per ogni applicazione che vuoi distribuire:
@@ -169,3 +171,60 @@ fine-grained** con permesso di sola lettura su repository pubblici
 ### 7. Aggiungere una nuova app in futuro
 Basta aggiungere un nuovo oggetto in [js/config.js](js/config.js) e fare
 commit/push: nessuna altra modifica necessaria.
+
+## E. Tracciamento dei download (IP di chi scarica)
+
+GitHub non espone **chi** scarica un asset di una release (`download_count` è
+solo un contatore aggregato, il download è anonimo e non richiede login). Per
+sapere almeno l'**IP** di chi scarica, i link di download non puntano più
+direttamente a `browser_download_url` ma a una funzione serverless propria
+([api/download.js](api/download.js)) che legge l'IP dalla richiesta, lo logga
+e poi fa un redirect (302) al vero file su GitHub.
+
+Questo richiede un hosting che supporti funzioni serverless: **GitHub Pages
+non basta** (è solo hosting statico). Usa [Vercel](https://vercel.com):
+
+### 1. Collega il repo a Vercel
+Su vercel.com → "Add New Project" → importa questo repository GitHub. Vercel
+rileva automaticamente [index.html](index.html) come sito statico e le
+funzioni in [api/](api) (`api/download.js`, `api/logs.js`) come serverless
+function, senza build step. Ad ogni push su `main` il sito si ridistribuisce
+da solo.
+
+### 2. Configura lo storage dei log (Upstash Redis)
+Su [Upstash](https://upstash.com) (piano free) crea un database Redis, poi su
+Vercel → Project Settings → Environment Variables aggiungi:
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+(li trovi nella dashboard del database Upstash, sezione "REST API"). Se
+l'integrazione Upstash è disponibile nel marketplace di Vercel, queste
+variabili vengono impostate automaticamente collegando il database al progetto.
+
+### 3. (Opzionale ma consigliato) Token GitHub lato server
+Ogni download fa una chiamata server-side a GitHub per risolvere l'URL reale
+dell'asset: senza token condivide il limite di 60 richieste/ora per IP del
+datacenter Vercel. Aggiungi una variabile d'ambiente `GITHUB_TOKEN` con un
+Personal Access Token fine-grained, sola lettura sui repository pubblici
+(sale a 5000 richieste/ora).
+
+### 4. Imposta un token admin per consultare i log
+Aggiungi una variabile d'ambiente `ADMIN_TOKEN` (una stringa lunga a caso, es.
+generata con `openssl rand -hex 32`). Poi apri, solo tu:
+```
+https://<tuo-sito>.vercel.app/api/logs?token=<ADMIN_TOKEN>
+```
+per vedere una tabella con data, IP, repo, asset e user-agent di ogni
+download (ultimi 200 per default; `&limit=2000` per vederne di più,
+`&format=json` per la risposta grezza).
+
+**Limiti da conoscere:**
+- L'IP non è un'identità certa: NAT/VPN/reti aziendali fanno condividere lo
+  stesso IP a più persone, e un IP può cambiare da una sessione all'altra.
+- L'IP è un dato personale (GDPR): se il sito è pubblico, valuta se serve
+  un'informativa privacy minima, e non condividere il link `/api/logs` con
+  nessuno (il token passa in query string, quindi finisce nella history del
+  browser di chi apre il link).
+- Senza `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` configurate, i
+  download funzionano comunque (il redirect avviene sempre): si perde solo
+  la tracciabilità, senza rompere nulla.

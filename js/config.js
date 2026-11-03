@@ -70,3 +70,8 @@ const APPS_CONFIG = [
   //   includePrerelease: false
   // },
 ];
+
+// Riusato anche lato server da api/download.js (Node, CommonJS) per validare
+// quali owner/repo sono autorizzati a passare dal proxy di download.
+// In browser `module` non esiste: il controllo evita un ReferenceError.
+if (typeof module !== "undefined") module.exports = APPS_CONFIG;

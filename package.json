@@ -1,0 +1,9 @@
+{
+  "name": "release-hub",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vetrina statica + funzioni serverless (api/) per il tracciamento dei download.",
+  "engines": {
+    "node": ">=18"
+  }
+}

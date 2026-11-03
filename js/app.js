@@ -144,11 +144,23 @@ function renderMarkdown(md) {
 
 /* ---------- Logica dati per singola app ---------- */
 
+// Se è impostato releasesOwner/releasesRepo, i pacchetti vengono letti da lì (tipicamente
+// un repo pubblico) invece che dal repo sorgente (owner/repo), che può restare privato.
+// Sono le stesse coordinate usate da api/download.js per la whitelist del proxy di download.
+function getReleasesCoords(appConfig) {
+  return {
+    owner: appConfig.releasesOwner || appConfig.owner,
+    repo: appConfig.releasesRepo || appConfig.repo
+  };
+}
+
+function buildDownloadUrl(coords, asset) {
+  const params = new URLSearchParams({ owner: coords.owner, repo: coords.repo, id: asset.id });
+  return `/api/download?${params.toString()}`;
+}
+
 async function loadReleasesForApp(appConfig) {
-  // Se è impostato releasesOwner/releasesRepo, i pacchetti vengono letti da lì (tipicamente
-  // un repo pubblico) invece che dal repo sorgente (owner/repo), che può restare privato.
-  const owner = appConfig.releasesOwner || appConfig.owner;
-  const repo = appConfig.releasesRepo || appConfig.repo;
+  const { owner, repo } = getReleasesCoords(appConfig);
   let releases = [];
   let page = 1;
   // Fino a 300 release (3 pagine da 100): sufficiente per uso personale.
@@ -215,7 +227,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { year: "numeric", month: "short", day: "numeric" });
 }
 
-function renderAssetList(release) {
+function renderAssetList(release, coords) {
   const assets = getPackageAssets(release);
   if (assets.length === 0) {
     return `<p class="hint">Nessun pacchetto allegato a questa release.</p>`;
@@ -223,7 +235,7 @@ function renderAssetList(release) {
   return `<div class="asset-list">${assets
     .map(
       (a) => `
-      <a href="${a.browser_download_url}" target="_blank" rel="noopener">
+      <a href="${buildDownloadUrl(coords, a)}" target="_blank" rel="noopener">
         <span>${escapeHtml(a.name)}</span>
         <span class="asset-dl-count">${a.download_count} download</span>
       </a>`
@@ -266,6 +278,7 @@ function renderAppCard(appConfig, releases) {
   card.querySelector(".app-name").textContent = appConfig.displayName;
   card.querySelector(".app-description").textContent = appConfig.description || "";
 
+  const coords = getReleasesCoords(appConfig);
   const totalDownloads = sumDownloads(releases);
   card.querySelector(".download-count").textContent = `⬇ ${totalDownloads.toLocaleString("it-IT")} download totali`;
 
@@ -286,7 +299,7 @@ function renderAppCard(appConfig, releases) {
     const asset = pickPrimaryAsset(latest, appConfig.primaryAssetPattern);
     const downloadBtn = card.querySelector(".download-btn");
     if (asset) {
-      downloadBtn.href = asset.browser_download_url;
+      downloadBtn.href = buildDownloadUrl(coords, asset);
       downloadBtn.textContent = `⬇ Download ${asset.name}`;
     } else {
       downloadBtn.href = latest.html_url;
@@ -310,7 +323,7 @@ function renderAppCard(appConfig, releases) {
           <span>${formatDate(r.published_at)}</span>
         </div>
         <div class="history-changelog">${renderMarkdown(r.body)}</div>
-        ${renderAssetList(r)}
+        ${renderAssetList(r, coords)}
       </div>`
     )
     .join("");

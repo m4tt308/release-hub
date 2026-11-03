@@ -46,6 +46,11 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
   download pubblico per chi non ha un token GitHub.
 - **2026-11-03** — Al collega compariva un messaggio di limite massimo di
   tentativi raggiunto (60) nell'aprire la vetrina.
+- **2026-11-03** — L'utente ha notato due download sul contatore e ha chiesto
+  come vedere chi li ha fatti; poi, saputo che GitHub non lo permette, ha
+  chiesto esplicitamente di tracciare almeno l'IP di chi scarica. Scelte
+  confermate dall'utente: hosting serverless su **Vercel**, storage dei log
+  su **Vercel KV / Upstash Redis**.
 
 ## Sessioni
 
@@ -200,6 +205,61 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
     chiarisce che è un limite condiviso con l'intera rete/IP, non causato
     dal singolo visitatore, e non invita più un collega non tecnico a
     "impostare un token".
+- A seguito di "mi serve sapere anche chi scarica o almeno l'ip" (chiesto
+  dopo aver visto che GitHub non espone chi ha scaricato un asset, solo un
+  contatore anonimo):
+  - Chiarito all'utente il limite di GitHub (download anonimo, nessun log
+    disponibile via API/Insights) e proposta la soluzione: far passare i
+    download da una funzione serverless propria che logga l'IP prima di
+    reindirizzare al file reale. Confermate dall'utente le scelte: hosting
+    **Vercel**, storage log **Upstash Redis** (via API REST, piano free).
+  - Reso [js/config.js](js/config.js) utilizzabile anche da Node
+    (`module.exports` solo se `module` esiste, per non rompere il caricamento
+    da `<script>` nel browser).
+  - Creato [api/download.js](api/download.js): accetta solo `owner`/`repo`/`id`
+    (mai un URL dal client, per evitare un open redirect), verifica che
+    `owner/repo` sia tra quelli configurati (whitelist presa da
+    `js/config.js`), risolve l'asset reale via API GitHub lato server
+    (supporta `GITHUB_TOKEN` opzionale per il rate limit), logga su Upstash
+    (IP da `x-forwarded-for`, asset, timestamp, user-agent) e fa un redirect
+    302 al vero `browser_download_url`. Se Upstash non è configurato, il
+    redirect funziona comunque: si perde solo il log.
+  - Creato [api/logs.js](api/logs.js): tabella HTML (o JSON con
+    `&format=json`) dei download loggati, protetta da `ADMIN_TOKEN` passato
+    in query string (`?token=...`).
+  - Aggiornato [js/app.js](js/app.js): tutti i link di download (bottone
+    principale e lista asset nello storico) ora puntano a
+    `/api/download?owner=...&repo=...&id=...` invece che direttamente a
+    `browser_download_url`. Il conteggio `download_count` mostrato resta
+    quello reale di GitHub, perché il redirect finisce comunque sulla CDN di
+    GitHub (il download conta lo stesso lato GitHub).
+  - Aggiunto [package.json](package.json) minimale (nessuna dipendenza, usa
+    il `fetch` globale di Node ≥18) e documentata la procedura in
+    [README.md](README.md) sezione E (collegare il repo a Vercel, variabili
+    d'ambiente `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`/
+    `GITHUB_TOKEN`/`ADMIN_TOKEN`, limiti noti: IP non è un'identità certa,
+    è un dato personale/GDPR, il link `/api/logs` non va condiviso).
+  - **Non ancora fatto, richiede l'utente:** creare l'account/progetto
+    Vercel e il database Upstash, impostare le variabili d'ambiente, e
+    collegare il repo. Finché il sito resta solo su GitHub Pages, i link
+    `/api/download` risultano 404 (Pages non esegue funzioni serverless).
+- L'utente ha collegato il progetto a Vercel e impostato su Vercel le
+  variabili `ADMIN_TOKEN`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+  (su tutti gli ambienti Production/Preview/Development), confermato da
+  screenshot della pagina "Environment Variables". `ADMIN_TOKEN` è stato
+  generato da me (`openssl rand -hex 32`) perché l'utente non sapeva cosa
+  inserirci. Vercel ha avviato da solo un nuovo deploy al salvataggio delle
+  variabili (redeploy automatico, non serve farlo a mano).
+- Chiarito all'utente che il vecchio link
+  `https://m4tt308.github.io/release-hub/` (GitHub Pages) non va più usato,
+  perché `/api/download` lì non esiste e i download si romperebbero.
+  L'utente ha scelto di disattivarlo (opzione "Disattiva GitHub Pages"
+  invece di tenere entrambi i link attivi). Fatto in questa sessione:
+  - Rimosso [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) (non pubblica più nulla su Pages ad ogni push).
+  - Disattivato GitHub Pages lato GitHub via `gh api -X DELETE repos/m4tt308/release-hub/pages`.
+  - Aggiornato [README.md](README.md) per riflettere che l'hosting è solo Vercel.
+  - L'unico link da usare/condividere ora è quello Vercel (es.
+    `release-hub-dusky.vercel.app`, o un dominio custom se mai impostato).
 - **Da fare in una prossima sessione (richiede input dell'utente):**
   - Decidere se impostare il token per l'automazione completa di Mail-Editor descritta sopra, oppure continuare a promuovere ogni release a mano.
   - Quando l'utente builda un pacchetto di Verbalia sulla sua macchina
@@ -207,3 +267,6 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
     tag + GitHub Release e carichi l'asset manualmente (`gh release create`).
   - Compilare `description`/`icon` mancanti (Verbalia description+icon, Mail-Editor icon) in [js/config.js](js/config.js).
   - Elencare gli altri progetti ("vari progetti") da aggiungere alla vetrina (owner/repo, nome, descrizione, icona, eventuale `primaryAssetPattern`).
+  - Verificare insieme (prossimo messaggio) che un download di prova compaia
+    davvero in `/api/logs?token=...`, per confermare che l'intera catena
+    Vercel → GitHub API → Upstash funzioni end-to-end.
