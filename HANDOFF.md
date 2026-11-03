@@ -35,6 +35,9 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
 - **2026-11-03** — L'utente ha caricato (nel pannello ⚙️ del sito, lato
   browser) un token personale con accesso di sola lettura ai contenuti di
   `Verbalia` e `Mail-Editor`.
+- **2026-11-03** — "Come si fa a pubblicare? Nel caso occupatene tu." →
+  richiesta di gestire in autonomia la pubblicazione delle release per i
+  repo-app.
 
 ## Sessioni
 
@@ -97,7 +100,46 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
     token impostato correttamente mostreranno "Nessuna release pubblicata
     ancora" (comportamento atteso, non un errore) finché non viene pubblicato
     un tag SemVer in quei repo.
+- A seguito di "come si fa a pubblicare? nel caso occupatene tu" (nota: questo
+  file è nel repository **pubblico** `release-hub`, quindi qui sotto restano
+  solo informazioni di processo, senza dettagli interni/proprietari sui
+  singoli repo-app — quelli vanno negli handoff privati di ciascun progetto):
+  - Prima di automatizzare alla cieca, verificato (consultando brevemente,
+    solo in locale, i repository delle due app) come si builda ciascuna.
+  - **Verbalia** ha una licenza d'uso proprietaria e un processo di build
+    pensato per essere eseguito dall'utente stesso, non in una pipeline CI
+    condivisa: per questo **non** è stata creata automazione di build/release
+    per questo repo. Confermato con l'utente: continuerà a produrre lui il
+    pacchetto, e quando me lo fornirà mi occuperò solo di creare il tag e
+    caricarlo come GitHub Release.
+  - Confermato inoltre con l'utente che i pacchetti di Verbalia non devono
+    essere raggiungibili pubblicamente dalla vetrina: essendo il repo
+    privato, un visitatore senza un proprio token di accesso vede solo un
+    messaggio "repository non trovato o privato" e nessun link di download —
+    requisito già soddisfatto dall'architettura esistente, nessuna modifica
+    necessaria.
+  - **Mail-Editor** ha invece un processo di build semplice ed eseguibile
+    senza problemi su un runner Windows standard di GitHub Actions: aggiunto
+    `.github/workflows/release.yml` al repo `m4tt308/Mail-Editor` (build +
+    pubblicazione Release con changelog automatico ad ogni tag `v*.*.*`).
+  - Bloccato dal classificatore di sicurezza di Claude Code nel tentare di
+    impostare da solo i permessi di scrittura delle Actions sul repo
+    (categoria "concessione di permessi"): l'utente l'ha fatto manualmente da
+    Settings → Actions → General → Workflow permissions.
+  - Creato e pushato il tag `v1.0.0` su `Mail-Editor`: workflow eseguito con
+    successo, prima Release pubblicata con l'eseguibile allegato — verificato
+    via API che struttura dati e link di download combaciano con quanto si
+    aspetta [js/app.js](js/app.js).
+  - Durante la stesura di questa stessa voce, un primo tentativo di commit
+    conteneva dettagli tecnici interni di Verbalia (meccanismo di licenza,
+    modello di build) non adatti a un repository pubblico: bloccato dal
+    classificatore di sicurezza prima della pubblicazione, poi riscritto in
+    forma generica come sopra. **Promemoria per le prossime sessioni**:
+    questo file è pubblico, non riportarci segreti, dettagli di sicurezza o
+    meccanismi interni dei singoli progetti.
 - **Da fare in una prossima sessione (richiede input dell'utente):**
+  - Quando l'utente builda un pacchetto di Verbalia sulla sua macchina
+    fidata, darmelo (percorso del file + numero di versione) perché crei
+    tag + GitHub Release e carichi l'asset manualmente (`gh release create`).
   - Compilare `description`/`icon` mancanti (Verbalia description+icon, Mail-Editor icon) in [js/config.js](js/config.js).
   - Elencare gli altri progetti ("vari progetti") da aggiungere alla vetrina (owner/repo, nome, descrizione, icona, eventuale `primaryAssetPattern`).
-  - Copiare il template del workflow di release in `Verbalia` e `Mail-Editor` (e negli altri repo-app) e pubblicare il primo tag SemVer (`v1.0.0`) per popolare la vetrina con dati reali.
