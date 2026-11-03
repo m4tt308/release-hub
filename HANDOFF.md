@@ -32,6 +32,9 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
 - **2026-11-03** — L'utente ha vari progetti (es. "Verbalia") da aggiungere
   alla vetrina. Requisito esplicito: per ogni app deve essere scaricabile
   **solo il pacchetto compilato**, mai il codice sorgente.
+- **2026-11-03** — L'utente ha caricato (nel pannello ⚙️ del sito, lato
+  browser) un token personale con accesso di sola lettura ai contenuti di
+  `Verbalia` e `Mail-Editor`.
 
 ## Sessioni
 
@@ -82,8 +85,19 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
   - Documentato nel README (sezione rate limit) che repo privati come
     Verbalia richiedono un token fine-grained con permesso "Contents:
     Read-only" nel pannello ⚙️ del sito.
+- A seguito di "ho caricato un token personale con accesso RO a contents di
+  Verbalia e mail-editor":
+  - Verificato via `gh` che `m4tt308/Mail-Editor` esiste, è privato,
+    descrizione "Editor di mail aziendali", nessuna release pubblicata.
+  - Aggiunta `Mail-Editor` a [js/config.js](js/config.js) (manca solo l'icona, TODO).
+  - Nota: il token è salvato solo nel `localStorage` del browser dell'utente
+    (pannello ⚙️ del sito), non è mai arrivato/visibile in questa sessione e
+    non serve consegnarlo altrove.
+  - Entrambe le app (Verbalia, Mail-Editor) non hanno ancora release: con il
+    token impostato correttamente mostreranno "Nessuna release pubblicata
+    ancora" (comportamento atteso, non un errore) finché non viene pubblicato
+    un tag SemVer in quei repo.
 - **Da fare in una prossima sessione (richiede input dell'utente):**
-  - Compilare `description` e `icon` di Verbalia in [js/config.js](js/config.js).
+  - Compilare `description`/`icon` mancanti (Verbalia description+icon, Mail-Editor icon) in [js/config.js](js/config.js).
   - Elencare gli altri progetti ("vari progetti") da aggiungere alla vetrina (owner/repo, nome, descrizione, icona, eventuale `primaryAssetPattern`).
-  - Copiare il template del workflow di release nei repo delle singole app e pubblicare il primo tag SemVer (`v1.0.0`) per popolare la vetrina con dati reali.
-  - Decidere se e come dare al pannello ⚙️ (token GitHub) un token fine-grained scoped solo ai repo privati interessati (es. Verbalia), dato che la maggior parte dei repo dell'utente sono privati.
+  - Copiare il template del workflow di release in `Verbalia` e `Mail-Editor` (e negli altri repo-app) e pubblicare il primo tag SemVer (`v1.0.0`) per popolare la vetrina con dati reali.

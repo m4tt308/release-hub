@@ -30,6 +30,16 @@ const APPS_CONFIG = [
     icon: "",
     primaryAssetPattern: null,
     includePrerelease: false
+  },
+  {
+    owner: "m4tt308",
+    repo: "Mail-Editor",
+    displayName: "Mail Editor",
+    description: "Editor di mail aziendali.",
+    // TODO: aggiungi un URL icona (es. raw.githubusercontent.com/m4tt308/Mail-Editor/main/assets/icon.png).
+    icon: "",
+    primaryAssetPattern: null,
+    includePrerelease: false
   }
 
   // Aggiungi qui le tue altre app, una per oggetto, sul modello sopra. Esempio:
