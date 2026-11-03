@@ -48,6 +48,11 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
   - Creato il repository GitHub pubblico `m4tt308/release-hub` e fatto il push iniziale.
   - Abilitato GitHub Pages con sorgente "GitHub Actions" sul repository.
   - Creato questo file [HANDOFF.md](HANDOFF.md).
+- Confermata dall'utente la creazione pubblica (bloccata inizialmente dal
+  classificatore di sicurezza di Claude Code, superata con conferma esplicita):
+  - Repo pubblico creato: https://github.com/m4tt308/release-hub
+  - GitHub Pages abilitato con sorgente "GitHub Actions".
+  - Primo deploy completato con successo: https://m4tt308.github.io/release-hub/ (HTTP 200).
 - **Da fare in una prossima sessione (richiede input dell'utente):**
   - Sostituire i placeholder in [js/config.js](js/config.js) con i repository reali delle app da mostrare in vetrina (owner, repo, nome, descrizione, icona).
   - Creare/scegliere i repository delle singole app e copiarvi il template del workflow di release.
