@@ -43,21 +43,29 @@ function setupSettingsPanel() {
 
 /* ---------- Fetch con cache in sessionStorage e gestione rate limit ---------- */
 
+// Durata della cache "negativa" per errori 404 (repo privato/inesistente per chi chiama):
+// più lunga di quella dei dati, perché per un visitatore senza token non cambierà da un
+// minuto all'altro, ed è proprio questa chiamata, destinata a fallire sempre, che altrimenti
+// consuma inutilmente il limite di 60 richieste/ora condiviso da tutti quelli dietro lo
+// stesso IP (es. un intero ufficio).
+const NOT_FOUND_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minuti
+
 function readCache(cacheKey) {
   try {
     const cached = sessionStorage.getItem(cacheKey);
     if (!cached) return null;
-    const { ts, data } = JSON.parse(cached);
-    if (Date.now() - ts < CACHE_TTL_MS) return data;
+    const entry = JSON.parse(cached);
+    const ttl = entry.errorStatus === 404 ? NOT_FOUND_CACHE_TTL_MS : CACHE_TTL_MS;
+    if (Date.now() - entry.ts < ttl) return entry;
   } catch {
     // Cache corrotta o non disponibile: ignora e ricarica dalla rete.
   }
   return null;
 }
 
-function writeCache(cacheKey, data) {
+function writeCache(cacheKey, entry) {
   try {
-    sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+    sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), ...entry }));
   } catch {
     // sessionStorage può rifiutare scritture troppo grandi (QuotaExceededError)
     // o essere disabilitato (es. navigazione privata): la cache è solo
@@ -65,10 +73,19 @@ function writeCache(cacheKey, data) {
   }
 }
 
+function throwCachedError(status) {
+  const err = new Error(`GitHub API error ${status} (da cache)`);
+  err.status = status;
+  throw err;
+}
+
 async function githubFetch(path) {
   const cacheKey = `gh_cache:${path}`;
   const cached = readCache(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    if (cached.errorStatus) throwCachedError(cached.errorStatus);
+    return cached.data;
+  }
 
   const headers = { Accept: "application/vnd.github+json" };
   const token = getToken();
@@ -82,13 +99,16 @@ async function githubFetch(path) {
     throw new RateLimitError(resetDate);
   }
   if (!res.ok) {
+    // I 404 (repo privato/inesistente per chi chiama) vengono messi in cache più a lungo:
+    // altrimenti ogni visitatore senza accesso spreca una richiesta ad ogni caricamento.
+    if (res.status === 404) writeCache(cacheKey, { errorStatus: 404 });
     const err = new Error(`GitHub API error ${res.status} su ${path}`);
     err.status = res.status;
     throw err;
   }
 
   const data = await res.json();
-  writeCache(cacheKey, data);
+  writeCache(cacheKey, { data });
   return data;
 }
 
@@ -331,9 +351,10 @@ async function init() {
       } catch (err) {
         if (err instanceof RateLimitError) {
           globalStatus.classList.remove("hidden");
-          globalStatus.textContent = err.resetDate
-            ? `Limite di richieste GitHub superato. Riprova dopo le ${err.resetDate.toLocaleTimeString("it-IT")}, oppure imposta un token nelle impostazioni (⚙️) per aumentare il limite.`
-            : "Limite di richieste GitHub superato. Imposta un token nelle impostazioni (⚙️) per aumentare il limite.";
+          const retry = err.resetDate
+            ? `riprova dopo le ${err.resetDate.toLocaleTimeString("it-IT")}`
+            : "riprova tra qualche minuto";
+          globalStatus.textContent = `Troppe richieste a GitHub da questa rete (limite condiviso con chiunque la usi, non legato a questo visitatore): ${retry}. Se persiste, chi gestisce il sito può impostare un token nelle impostazioni (⚙️) per aumentare il limite.`;
         }
         console.error(`Errore nel caricamento di ${appConfig.owner}/${appConfig.repo}:`, err);
         const message =

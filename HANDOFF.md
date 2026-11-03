@@ -44,6 +44,8 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
   non riusciva a scaricare il pacchetto di Mail-Editor (perché il repo
   sorgente è privato e lui non ha un token). Richiesto di far funzionare il
   download pubblico per chi non ha un token GitHub.
+- **2026-11-03** — Al collega compariva un messaggio di limite massimo di
+  tentativi raggiunto (60) nell'aprire la vetrina.
 
 ## Sessioni
 
@@ -179,6 +181,25 @@ Elenco delle richieste ricevute dall'utente, in ordine cronologico.
     `release-hub`, creato dall'utente (non è possibile crearlo via API) e
     salvato come secret nel repo Mail-Editor. Non ancora fatto: per ora ogni
     nuova release di Mail-Editor va promossa a mano (chiedendo a me).
+- A seguito di "a lui dice che è stato raggiunto il massimo di tentativi
+  (60)":
+  - Causa trovata: le GitHub REST API non autenticate hanno un limite di 60
+    richieste/ora **per indirizzo IP**, condiviso da chiunque sia dietro la
+    stessa rete (es. tutto un ufficio). Il bug specifico: la richiesta per
+    Verbalia (che fallisce sempre con 404 per chi non ha un token, come il
+    collega) non veniva mai messa in cache, quindi **ogni singolo
+    caricamento della pagina, da parte di chiunque**, sprecava una
+    richiesta su un tentativo destinato a fallire comunque.
+  - Corretto in [js/app.js](js/app.js): ora anche le risposte 404 vengono
+    messe in cache (per 30 minuti, più a lungo dei 5 minuti usati per i dati
+    validi, perché per chi non ha accesso quella risposta non cambierà a
+    breve). Dopo il primo tentativo fallito, i successivi caricamenti nella
+    stessa sessione del browser non generano più nessuna richiesta di rete
+    per Verbalia.
+  - Migliorato anche il messaggio mostrato in caso di limite superato:
+    chiarisce che è un limite condiviso con l'intera rete/IP, non causato
+    dal singolo visitatore, e non invita più un collega non tecnico a
+    "impostare un token".
 - **Da fare in una prossima sessione (richiede input dell'utente):**
   - Decidere se impostare il token per l'automazione completa di Mail-Editor descritta sopra, oppure continuare a promuovere ogni release a mano.
   - Quando l'utente builda un pacchetto di Verbalia sulla sua macchina
