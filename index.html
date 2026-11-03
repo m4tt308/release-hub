@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Release Hub — m4tt308 / MLC</title>
-<meta name="description" content="Repo di tool ideati e sviluppati da m4tt308 / MLC. Download e storico release delle applicazioni personali." />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234f8cff'/%3E%3Cstop offset='100%25' stop-color='%238b7bff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='%230a0b10'/%3E%3Crect x='3' y='3' width='58' height='58' rx='12' fill='url(%23g)'/%3E%3Ctext x='50%25' y='57%25' dy='.35em' text-anchor='middle' font-family='monospace' font-weight='700' font-size='26' fill='white'%3E%3E_%3C/text%3E%3C/svg%3E" />
+<title>DOCK — m4tt308 / MLC</title>
+<meta name="description" content="DOCK — repo di tool ideati e sviluppati da m4tt308 / MLC. Download e storico release delle applicazioni personali." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234f8cff'/%3E%3Cstop offset='100%25' stop-color='%238b7bff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='%230a0b10'/%3E%3Crect x='3' y='3' width='58' height='58' rx='12' fill='url(%23g)'/%3E%3Cpath d='M22 16l12 16-12 16' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -22,9 +22,24 @@
 
   <header class="site-header">
     <div class="container header-inner">
-      <p class="eyebrow">root@release-hub:~$ <span class="eyebrow-cursor">█</span></p>
-      <h1>📦 Release Hub</h1>
-      <p class="subtitle">Download e storico versioni delle mie applicazioni</p>
+      <p class="eyebrow">root@dock:~$ <span class="eyebrow-cursor">█</span></p>
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 48 48" width="40" height="40">
+            <defs>
+              <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#4f8cff"/>
+                <stop offset="100%" stop-color="#8b7bff"/>
+              </linearGradient>
+            </defs>
+            <rect width="48" height="48" rx="12" fill="url(#dockGrad)"/>
+            <path d="M14 14l9 10-9 10" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
+            <path d="M23 14l9 10-9 10" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </span>
+        <h1>DOCK</h1>
+      </div>
+      <p class="subtitle">Download e storico versioni dei tuoi tool</p>
       <p class="byline">by <a href="https://github.com/m4tt308" target="_blank" rel="noopener">m4tt308 / MLC</a></p>
     </div>
     <button id="settings-toggle" class="icon-btn" title="Impostazioni token GitHub">⚙️</button>

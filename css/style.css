@@ -100,10 +100,32 @@ body {
 }
 .eyebrow-cursor { animation: blink 1.1s steps(1) infinite; }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  display: inline-flex;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 16px rgba(79, 140, 255, 0.35));
+  transition: transform 0.5s var(--ease-soft);
+}
+.site-header:hover .brand-logo { transform: rotate(-4deg) scale(1.05); }
+
 .site-header h1 {
   margin: 0;
-  font-size: 1.7rem;
-  letter-spacing: -0.01em;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.9rem;
+  letter-spacing: 0.1em;
+  background: linear-gradient(90deg, var(--text), var(--accent-hover));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .subtitle {
