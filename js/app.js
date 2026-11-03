@@ -380,7 +380,12 @@ async function init() {
   );
 
   grid.innerHTML = "";
-  cards.forEach((card) => grid.appendChild(card));
+  // Ingresso "a cascata": ogni card parte con un piccolo ritardo in più della precedente
+  // (letto da CSS via --card-delay), così l'animazione di comparsa non è tutta simultanea.
+  cards.forEach((card, i) => {
+    card.style.setProperty("--card-delay", `${Math.min(i * 70, 420)}ms`);
+    grid.appendChild(card);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
